@@ -1,9 +1,3 @@
-class Destruct {
-  constructor(args) {
-    this.args = args
-  }
-}
-
 const type = (x) => x?.constructor?.name ?? "Null"
 
 const interpret = (exp, env) =>
@@ -93,12 +87,13 @@ const parse = (tokens, env) => {
   return exp
 }
 
+// requires precedence to print ()
 const prn = (value) => {
   const dispatch = {
     Array: () => `(${value.map(prn).join(" ")})`,
-    Destruct: () => `[${value.args.map(prn).join(" ")}]`,
     Number: () => String(value),
-    Object: () => `${value.type} ${value.args.map(prn).join(" ")}`,
+    Null: () => "null",
+    Object: () => Object.values(value).join(" "),
     String: () => value,
   }
 
@@ -113,21 +108,6 @@ const tokenize = (s) => {
   const _ = (xs) => {
     const x = xs.shift()
 
-    if (x === "[") {
-      const args = []
-      while (xs.length && xs[0] !== "]") {
-        args.push(_(xs))
-      }
-
-      if (xs[0] !== "]") {
-        throw new Error(`Expected closing ] but found ${x[0]}`)
-      }
-
-      xs.shift()
-
-      return new Destruct(args)
-    }
-
     if (String(Number(x)) === x) {
       return Number(x)
     }
@@ -136,7 +116,7 @@ const tokenize = (s) => {
   }
 
   const xs = s
-    .replace(/([()[\]])/g, " $1 ")
+    .replace(/([()]|[a-zA-Z][a-zA-Z0-9]*)/g, " $1 ")
     .trim()
     .split(/\s+/)
   const tokens = []
@@ -148,6 +128,27 @@ const tokenize = (s) => {
 }
 
 const operators = {
+  "∈": {
+    arity: 2,
+    infix: true,
+    precedence: 400,
+  },
+
+  ".": {
+    arity: 2,
+    infix: true,
+    precedence: 400,
+    primitive: (rators, env) => {
+      const obj = interpret(rators[0], env)
+      const key = rators[1]
+      if (!(key in obj)) {
+        throw new Error(`Unknown field ${key} on ${prn(obj)}`)
+      }
+
+      return obj[key]
+    },
+  },
+
   "√": {
     arity: 1,
     dispatch: {
@@ -199,17 +200,37 @@ const operators = {
     precedence: 100,
   },
 
+  ",": {
+    arity: 2,
+    dispatch: {
+      _: (car, cdr) => new Cons(car, cdr),
+    },
+    infix: true,
+    precedence: 75,
+  },
+
   "∃": {
     arity: 2,
     precedence: 0,
     primitive: (rators, env) => {
-      const [name, arity] = rators
+      const name = rators[0]
+      let struct = rators[1]
+      const params = []
+      while (struct?.[0] === ",") {
+        params.unshift(struct[2])
+        struct = struct[1]
+      }
+      params.push(struct)
+
       env[name] = {
-        arity,
+        arity: params.length,
         dispatch: {
-          _: (...args) => ({ type: name, args }),
+          _: (...args) => ({
+            type: name,
+            ...Object.fromEntries(params.map((param, i) => [param, args[i]])),
+          }),
         },
-        precedence: 400,
+        precedence: 50,
       }
     },
   },
@@ -221,14 +242,12 @@ const operators = {
     primitive: (rators, env) => {
       const [lhs, rhs] = rators
       const [op, ...params] = lhs
-      env[op].dispatch[params[0][0]] = (...args) => {
+      env[op].dispatch[params[0][2]] = (...args) => {
         const newEnv = { ...env }
         for (let p = 0; p < params.length; p++) {
           const param = params[p]
           const arg = args[p]
-          for (let i = 1; i < param.length; i++) {
-            newEnv[param[i]] = arg.args[i - 1] // could be zip
-          }
+          newEnv[param[1]] = arg
         }
 
         return interpret(rhs, { ...newEnv })
@@ -253,6 +272,10 @@ while (tokens.length) {
 console.log("result:", prn(result))
 
 /*
+   right associative , for instance
+
+   comments
+   
    how to define operators
      exists operator with arity n, infix
 

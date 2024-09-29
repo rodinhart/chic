@@ -1,13 +1,12 @@
-∃ Vec 3
+∃ Vec x, y, z
 
-Vec x1 y1 z1 + Vec x2 y2 z2 ≡ Vec (x1 + x2) (y1 + y2) (z1 + z2)
+A ∈ Vec + B ∈ Vec ≡ Vec A.x + B.x  A.y + B.y  A.z + B.z
 
-Vec x1 y1 z1 × Vec x2 y2 z2 ≡ Vec
-  (y1 × z2 - y2 × z1)
-  (z1 × x2 - z2 × x1)
-  (x1 × y2 - x2 × y1)
+A ∈ Vec × B ∈ Vec ≡ Vec
+  A.y × B.z - A.z × B.y
+  A.z × B.x - A.x × B.z
+  A.x × B.y - A.y × B.x
 
-Vec a1 a2 a3 · Vec b1 b2 b3 ≡ a1 × b1 + a2 × b2 + a3 × b3
+A ∈ Vec · B ∈ Vec ≡ A.x × B.x + A.y × B.y + A.z × B.z
 
-√(Vec 1 2 3 · Vec 4 5 6)
-
+√((Vec 1 2 3) · (Vec 4 5 6))

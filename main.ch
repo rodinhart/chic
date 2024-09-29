@@ -1,4 +1,4 @@
-∃ Vec x, y, z
+∃ type Vec x, y, z
 
 A ∈ Vec + B ∈ Vec ≡ Vec A.x + B.x  A.y + B.y  A.z + B.z
 
@@ -7,6 +7,8 @@ A ∈ Vec × B ∈ Vec ≡ Vec
   A.z × B.x - A.x × B.z
   A.x × B.y - A.y × B.x
 
+∃ op · 3, infix, ×
+
 A ∈ Vec · B ∈ Vec ≡ A.x × B.x + A.y × B.y + A.z × B.z
 
-√((Vec 1 2 3) · (Vec 4 5 6))
+√((Vec 2 3 4) · (Vec 6 7 1))

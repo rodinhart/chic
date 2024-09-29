@@ -38,6 +38,17 @@ const parse = (tokens, env) => {
   let i = 0
 
   const expression = (min = -1) => {
+    if (tokens[i] === ";;") {
+      i++
+      while (i < tokens.length && tokens[i] !== ";;") {
+        i++
+      }
+
+      if (tokens[i++] !== ";;") {
+        throw new Error(`Expected closing ;; but found ${tokens[i - 1]}`)
+      }
+    }
+
     if (i >= tokens.length) {
       throw new Error(`Unexpected EOF`)
     }
@@ -116,7 +127,7 @@ const tokenize = (s) => {
   }
 
   const xs = s
-    .replace(/([()]|[a-zA-Z][a-zA-Z0-9]*)/g, " $1 ")
+    .replace(/([()]|[a-zA-Z0-9]+)/g, " $1 ")
     .trim()
     .split(/\s+/)
   const tokens = []
@@ -166,12 +177,12 @@ const operators = {
     precedence: 200,
   },
 
-  "·": {
-    arity: 2,
-    dispatch: {},
-    infix: true,
-    precedence: 200,
-  },
+  // "·": {
+  //   arity: 2,
+  //   dispatch: {},
+  //   infix: true,
+  //   precedence: 200,
+  // },
 
   "/": {
     arity: 2,
@@ -210,27 +221,40 @@ const operators = {
   },
 
   "∃": {
-    arity: 2,
+    arity: 3,
     precedence: 0,
     primitive: (rators, env) => {
-      const name = rators[0]
-      let struct = rators[1]
+      const name = rators[1]
+      let struct = rators[2]
       const params = []
       while (struct?.[0] === ",") {
         params.unshift(struct[2])
         struct = struct[1]
       }
       params.push(struct)
-
-      env[name] = {
-        arity: params.length,
-        dispatch: {
-          _: (...args) => ({
-            type: name,
-            ...Object.fromEntries(params.map((param, i) => [param, args[i]])),
-          }),
-        },
-        precedence: 50,
+      if (rators[0] === "type") {
+        env[name] = {
+          arity: params.length,
+          dispatch: {
+            _: (...args) => ({
+              type: name,
+              ...Object.fromEntries(params.map((param, i) => [param, args[i]])),
+            }),
+          },
+          precedence: 50,
+        }
+      } else {
+        env[name] = {
+          arity: params.find((param) => typeof param === "number"),
+          dispatch: {},
+          infix: params.includes("infix"),
+          precedence:
+            env[
+              params.find(
+                (param) => typeof param !== "number" && param !== "infix"
+              )
+            ].precedence,
+        }
       }
     },
   },
@@ -270,22 +294,3 @@ while (tokens.length) {
 }
 
 console.log("result:", prn(result))
-
-/*
-   right associative , for instance
-
-   comments
-   
-   how to define operators
-     exists operator with arity n, infix
-
-   how to capture complete type
-     mag Vec a1 a2 a3 ≡ √(Vec a1 a2 a3 · Vec a1 a2 a3)
-    versus
-     mag Vec v ≡ √(v · v)
-
-   Do we like
-     Vec (a1 + b1) (a2 + b2) (a3 + b3)
-    versus
-     Vec a1 + b1 a2 + b2 a3 + b3
-*/

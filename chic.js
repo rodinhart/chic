@@ -21,7 +21,9 @@ export const interpret = (exp, env) =>
 
       const args = rators.map((rator) => interpret(rator, env))
 
-      const t = type(args[0]) === "Object" ? args[0].type : type(args[0])
+      const t = args
+        .map((arg) => (type(arg) === "Object" ? arg.type : type(arg)))
+        .join("|")
 
       if (!(t in op.dispatch)) {
         if ("_" in op.dispatch) {
@@ -212,10 +214,26 @@ export const operators = {
     precedence: 18,
   },
 
+  cos: {
+    arity: 1,
+    dispatch: {
+      Number: (a) => Math.cos(a),
+    },
+    precedence: 18,
+  },
+
+  sin: {
+    arity: 1,
+    dispatch: {
+      Number: (a) => Math.sin(a),
+    },
+    precedence: 18,
+  },
+
   "×": {
     arity: 2,
     dispatch: {
-      Number: (a, b) => a * b,
+      "Number|Number": (a, b) => a * b,
     },
     infix: true,
     precedence: 16,
@@ -224,7 +242,7 @@ export const operators = {
   "/": {
     arity: 2,
     dispatch: {
-      Number: (a, b) => a / b,
+      "Number|Number": (a, b) => a / b,
     },
     infix: true,
     precedence: 16,
@@ -233,7 +251,7 @@ export const operators = {
   "+": {
     arity: 2,
     dispatch: {
-      Number: (a, b) => a + b,
+      "Number|Number": (a, b) => a + b,
     },
     infix: true,
     precedence: 14,
@@ -242,7 +260,7 @@ export const operators = {
   "-": {
     arity: 2,
     dispatch: {
-      Number: (a, b) => a - b,
+      "Number|Number": (a, b) => a - b,
     },
     infix: true,
     precedence: 14,
@@ -251,7 +269,7 @@ export const operators = {
   ">": {
     arity: 2,
     dispatch: {
-      Number: (a, b) => a > b,
+      "Number|Number": (a, b) => a > b,
     },
     infix: true,
     precedence: 12,
@@ -260,7 +278,7 @@ export const operators = {
   "<": {
     arity: 2,
     dispatch: {
-      Number: (a, b) => a < b,
+      "Number|Number": (a, b) => a < b,
     },
     infix: true,
     precedence: 12,
@@ -428,11 +446,15 @@ export const operators = {
     primitive: (rators, env) => {
       const [lhs, rhs] = rators
       const [op, ...params] = lhs
-      if (params[0][0] !== "∈") {
-        throw new Error(`Expected ∈ for dispatch`)
+      for (const param of params) {
+        if (param[0] !== "∈") {
+          throw new Error(`Expected ∈ for dispatch`)
+        }
       }
 
-      env[op].dispatch[params[0][2]] = (...args) => {
+      env[op].dispatch[params.map((param) => param[2]).join("|")] = (
+        ...args
+      ) => {
         const newEnv = { ...env }
         for (let p = 0; p < params.length; p++) {
           const param = params[p]

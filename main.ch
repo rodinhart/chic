@@ -17,6 +17,22 @@ A ∈ Vec · B ∈ Vec ≡
   A.x × B.x + A.y × B.y + A.z × B.z
 
 
+;; Matrix ;;
+∃ type Matrix
+  a, b, c,
+  d, e, f,
+  g, h, i
+
+M ∈ Matrix × N ∈ Matrix ≡ Matrix
+  M.a × N.a + M.b + N.d + M.c × N.g  M.a × N.b + M.b + N.e + M.c × N.h  M.a × N.c + M.b + N.f + M.c × N.i
+  M.d × N.a + M.e + N.d + M.f × N.g  M.d × N.b + M.e + N.e + M.f × N.h  M.d × N.c + M.e + N.f + M.f × N.i
+  M.g × N.a + M.h + N.d + M.i × N.g  M.g × N.b + M.h + N.e + M.i × N.h  M.g × N.c + M.h + N.f + M.i × N.i
+
+M ∈ Matrix × V ∈ Vec ≡ Vec
+  M.a × V.x + M.b × V.y + M.c × V.z
+  M.d × V.x + M.e × V.y + M.f × V.z
+  M.g × V.x + M.h × V.y + M.i × V.z
+
 ;; Recursion test ;;
 ∃ op sum 2, 10
 
@@ -60,3 +76,28 @@ mandel x ∈ Number y ∈ Number s ∈ Number S ∈ Number ≡
       O : Complex 0 0 in
   ∀ P let C : Complex x + q × P.x y + q × P.y in
       >> Pixel P.x P.y mandel_f C O 256
+
+
+;; 3d ;;
+∃ op project 1, 10
+project scale ∈ Number ≡
+  ∀ V >> Point scale × V.x / V.y scale × V.z / V.y
+
+∃ op rotate 2, 10
+rotate R ∈ Vec V ∈ Vec ≡ 
+  let Rz : Matrix cos R.z 0-sin R.z 0
+                  sin R.z cos R.z   0
+                  0     0           1 in
+  Rz × V
+
+∃ op translate 1, 10
+translate T ∈ Vec ≡
+  ∀ V >> Vec V.x + T.x V.y + T.y V.z + T.z
+
+∃ op render 3, 10
+render R ∈ Vec T ∈ Vec scale ∈ Number ≡
+  ∀ V let W : rotate R V,
+          X : Vec W.x + T.x W.y + T.y W.z + T.z in
+      >> Point scale × X.x / X.y scale × X.z / X.y
+
+;; render R T scale ≡ rotate R -> translate T -> project scale

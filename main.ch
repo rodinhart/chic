@@ -25,11 +25,31 @@ sum n ∈ Number a ∈ Number ≡
     a otherwise }
 
 
-;; Mandelbrot ;;
-
+;; Complex numbers ;;
 ∃ type Complex re, im
+∃ op mag 1, 10
 
-∃ op mandel_iter 3, 10
+A ∈ Complex + B ∈ Complex ≡ Complex A.re + B.re A.im + B.im
+A ∈ Complex × B ∈ Complex ≡ Complex
+    A.re × B.re - A.im × B.im
+    A.re × B.im + A.im × B.re
+mag A ∈ Complex ≡ √(A.re × A.re + A.im × A.im)
 
-;; mandel_iter C ∈ Complex Z ∈ Complex n ∈ Number ≡
-  { mandel_iter }  ;;
+
+;; Point ;;
+∃ type Point x, y
+
+;; Pixel ;;
+∃ type Pixel x, y, col
+
+
+;; Mandelbrot ;;
+∃ op mandelf 3, 10
+mandelf C ∈ Complex Z ∈ Complex n ∈ Number ≡
+  { mandelf C Z × Z + C n - 1 if n > 0 ∧ (mag Z) < 2,
+    n otherwise }
+
+;; needs let e.g.  let q ≡ s / S  ;;
+∃ op mandel 4, 10
+mandel x ∈ Number y ∈ Number s ∈ Number S ∈ Number ≡
+  ∀ P >> (Pixel P.x P.y (mandelf (Complex x + s/S × P.x y + s/S × P.y) (Complex 0 0) 256))

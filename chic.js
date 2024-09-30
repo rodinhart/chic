@@ -9,7 +9,7 @@ const decomma = (struct) => {
   return params
 }
 
-const interpret = (exp, env) =>
+export const interpret = (exp, env) =>
   ({
     Array: () => {
       const [rand, ...rators] = exp
@@ -44,7 +44,7 @@ const interpret = (exp, env) =>
     },
   }[type(exp)]())
 
-const parse = (tokens, env) => {
+export const parse = (tokens, env) => {
   let i = 0
 
   const expression = (min = -1) => {
@@ -97,8 +97,7 @@ const parse = (tokens, env) => {
   return exp
 }
 
-// requires precedence to print ()
-const prn = (value) => {
+export const prn = (value) => {
   const dispatch = {
     Array: () => `(${value.map(prn).join(" ")})`,
     Boolean: () => String(value),
@@ -116,7 +115,7 @@ const prn = (value) => {
   return dispatch[type(value)]()
 }
 
-const tableOperators = (operators) =>
+export const tableOperators = (operators) =>
   Object.values(
     Object.groupBy(
       Object.entries(operators),
@@ -129,7 +128,7 @@ const tableOperators = (operators) =>
       precedence: group[0][1].precedence,
     }))
 
-const tokenize = (s) => {
+export const tokenize = (s) => {
   const skipComment = (xs) => {
     if (xs[0] === ";;") {
       xs.shift()
@@ -164,7 +163,7 @@ const tokenize = (s) => {
   }
 
   const xs = s
-    .replace(/([()]|[a-zA-Z_0-9]+)/g, " $1 ")
+    .replace(/([()]|[a-zA-Z_0-9]+|-[0-9]+)/g, " $1 ")
     .trim()
     .split(/\s+/)
   const tokens = []
@@ -179,7 +178,7 @@ const tokenize = (s) => {
 
 const type = (x) => x?.constructor?.name ?? "Null"
 
-const operators = {
+export const operators = {
   "∈": {
     arity: 2,
     infix: true,
@@ -252,6 +251,26 @@ const operators = {
     },
     infix: true,
     precedence: 12,
+  },
+
+  "<": {
+    arity: 2,
+    dispatch: {
+      Number: (a, b) => a < b,
+    },
+    infix: true,
+    precedence: 12,
+  },
+
+  "∧": {
+    arity: 2,
+    infix: true,
+    precedence: 11,
+    primitive: (rators, env) => {
+      const [a, b] = rators
+
+      return interpret(a, env) && interpret(b, env)
+    },
   },
 
   otherwise: {
@@ -380,24 +399,4 @@ const operators = {
       }
     },
   },
-}
-
-const source = await Deno.readTextFile("main.ch")
-
-const tokens = tokenize(source)
-// console.log("tokens:", tokens)
-
-const env = { ...operators }
-let result = null
-while (tokens.length) {
-  const exp = parse(tokens, env)
-  // console.log("exp:", prn(exp))
-  result = interpret(exp, env)
-}
-
-console.table(tableOperators(env))
-
-console.log("result:", prn(result))
-if (type(result) === "Function") {
-  console.log("called: ", result([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
 }

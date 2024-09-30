@@ -1,6 +1,7 @@
 ## todo
 
 - implement let
+  - don't like -, can't use ≡
 - less precedence by using right associative
 - ast to string/source
 - how to do |Z|

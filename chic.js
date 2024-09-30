@@ -284,6 +284,12 @@ export const operators = {
     precedence: 6,
   },
 
+  ":": {
+    arity: 2,
+    infix: true,
+    precedence: 6,
+  },
+
   ",": {
     arity: 2,
     dispatch: {
@@ -295,7 +301,7 @@ export const operators = {
 
   "{": {
     arity: 2,
-    precedence: 2,
+    precedence: 3,
     primitive: (rators, env) => {
       if (
         !(
@@ -321,12 +327,12 @@ export const operators = {
 
   "}": {
     arity: 0,
-    precedence: 2,
+    precedence: 3,
   },
 
   "∀": {
     arity: 2,
-    precedence: 1,
+    precedence: 2,
     primitive: (rators, env) => {
       const [name, body] = rators
       const fn = (xs) => {
@@ -349,7 +355,7 @@ export const operators = {
 
   "∃": {
     arity: 3,
-    precedence: 0,
+    precedence: 1,
     primitive: (rators, env) => {
       const name = rators[1]
       const params = decomma(rators[2])
@@ -397,6 +403,28 @@ export const operators = {
 
         return interpret(rhs, { ...newEnv })
       }
+    },
+  },
+
+  let: {
+    arity: 3,
+    precedence: 1,
+    primitive: (rators, env) => {
+      if (rators[1] !== "in") {
+        throw new Error(`Expected let ... in ... but found ${rators[1]}`)
+      }
+
+      const defs = decomma(rators[0])
+      const newEnv = { ...env }
+      for (const def of defs) {
+        // if (def?.[0] !== ":") {
+        //   throw new Error(`Expected let . : . but found ${def}`)
+        // }
+
+        newEnv[def[1]] = interpret(def[2], newEnv)
+      }
+
+      return interpret(rators[2], newEnv)
     },
   },
 }

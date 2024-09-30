@@ -29,15 +29,18 @@ sum n ∈ Number a ∈ Number ≡
 ∃ type Complex re, im
 ∃ op mag 1, 10
 
-A ∈ Complex + B ∈ Complex ≡ Complex A.re + B.re A.im + B.im
+A ∈ Complex + B ∈ Complex ≡ Complex
+  A.re + B.re
+  A.im + B.im
 A ∈ Complex × B ∈ Complex ≡ Complex
-    A.re × B.re - A.im × B.im
-    A.re × B.im + A.im × B.re
+  A.re × B.re - A.im × B.im
+  A.re × B.im + A.im × B.re
 mag A ∈ Complex ≡ √(A.re × A.re + A.im × A.im)
 
 
 ;; Point ;;
 ∃ type Point x, y
+
 
 ;; Pixel ;;
 ∃ type Pixel x, y, col
@@ -49,7 +52,7 @@ mandelf C ∈ Complex Z ∈ Complex n ∈ Number ≡
   { mandelf C Z × Z + C n - 1 if n > 0 ∧ (mag Z) < 2,
     n otherwise }
 
-;; needs let e.g.  let q ≡ s / S  ;;
 ∃ op mandel 4, 10
 mandel x ∈ Number y ∈ Number s ∈ Number S ∈ Number ≡
-  ∀ P >> (Pixel P.x P.y (mandelf (Complex x + s/S × P.x y + s/S × P.y) (Complex 0 0) 256))
+  let q : s / S in
+  ∀ P >> (Pixel P.x P.y (mandelf (Complex x + q × P.x y + q × P.y) (Complex 0 0) 256))

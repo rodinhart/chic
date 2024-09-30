@@ -65,7 +65,11 @@ export const parse = (tokens, env) => {
     }
 
     const op = env[token]
-    if (op && !op.infix && op.precedence > min) {
+    if (
+      op &&
+      !op.infix &&
+      (op.precedence > min || (op.right && op.precedence === min))
+    ) {
       return infix(
         [
           token,
@@ -273,14 +277,14 @@ export const operators = {
     },
   },
 
-  otherwise: {
-    arity: 1,
-    precedence: 10,
-  },
-
   if: {
     arity: 2,
     infix: true,
+    precedence: 6,
+  },
+
+  otherwise: {
+    arity: 1,
     precedence: 6,
   },
 
@@ -332,7 +336,7 @@ export const operators = {
 
   "∀": {
     arity: 2,
-    precedence: 2,
+    precedence: 1,
     primitive: (rators, env) => {
       const [name, body] = rators
       const fn = (xs) => {
@@ -351,11 +355,44 @@ export const operators = {
 
       return fn
     },
+    right: true,
+  },
+
+  ">>": {
+    arity: 1,
+    dispatch: {
+      _: (val) => ({ type: ">>", val }),
+    },
+    precedence: 1,
+    right: true,
+  },
+
+  let: {
+    arity: 3,
+    precedence: 1,
+    primitive: (rators, env) => {
+      if (rators[1] !== "in") {
+        throw new Error(`Expected let ... in ... but found ${rators[1]}`)
+      }
+
+      const defs = decomma(rators[0])
+      const newEnv = { ...env }
+      for (const def of defs) {
+        if (def?.[0] !== ":") {
+          throw new Error(`Expected let . : . but found ${def}`)
+        }
+
+        newEnv[def[1]] = interpret(def[2], newEnv)
+      }
+
+      return interpret(rators[2], newEnv)
+    },
+    right: true,
   },
 
   "∃": {
     arity: 3,
-    precedence: 1,
+    precedence: 0,
     primitive: (rators, env) => {
       const name = rators[1]
       const params = decomma(rators[2])
@@ -370,6 +407,7 @@ export const operators = {
             }),
           },
           precedence: 10,
+          right: true,
         }
       } else {
         env[name] = {
@@ -377,6 +415,7 @@ export const operators = {
           dispatch: {},
           infix: params.includes("infix"),
           precedence: params[params.length - 1],
+          right: !params.includes("infix"),
         }
       }
     },
@@ -403,28 +442,6 @@ export const operators = {
 
         return interpret(rhs, { ...newEnv })
       }
-    },
-  },
-
-  let: {
-    arity: 3,
-    precedence: 1,
-    primitive: (rators, env) => {
-      if (rators[1] !== "in") {
-        throw new Error(`Expected let ... in ... but found ${rators[1]}`)
-      }
-
-      const defs = decomma(rators[0])
-      const newEnv = { ...env }
-      for (const def of defs) {
-        // if (def?.[0] !== ":") {
-        //   throw new Error(`Expected let . : . but found ${def}`)
-        // }
-
-        newEnv[def[1]] = interpret(def[2], newEnv)
-      }
-
-      return interpret(rators[2], newEnv)
     },
   },
 }

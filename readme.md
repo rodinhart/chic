@@ -8,3 +8,4 @@
 - change function call to f(x, y) ?
 - use ℝ for Number
 - env.Point.dispatch.\_(x, y) to be env.Point(x, y)
+- what operators/types can be defined in chic

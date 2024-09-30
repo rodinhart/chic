@@ -1,4 +1,13 @@
-const type = (x) => x?.constructor?.name ?? "Null"
+const decomma = (struct) => {
+  const params = []
+  while (struct?.[0] === ",") {
+    params.unshift(struct[2])
+    struct = struct[1]
+  }
+  params.unshift(struct)
+
+  return params
+}
 
 const interpret = (exp, env) =>
   ({
@@ -24,6 +33,7 @@ const interpret = (exp, env) =>
 
       return op.dispatch[t](...args)
     },
+    Boolean: () => exp,
     Number: () => exp,
     String: () => {
       if (!(exp in env)) {
@@ -38,17 +48,6 @@ const parse = (tokens, env) => {
   let i = 0
 
   const expression = (min = -1) => {
-    if (tokens[i] === ";;") {
-      i++
-      while (i < tokens.length && tokens[i] !== ";;") {
-        i++
-      }
-
-      if (tokens[i++] !== ";;") {
-        throw new Error(`Expected closing ;; but found ${tokens[i - 1]}`)
-      }
-    }
-
     if (i >= tokens.length) {
       throw new Error(`Unexpected EOF`)
     }
@@ -102,6 +101,8 @@ const parse = (tokens, env) => {
 const prn = (value) => {
   const dispatch = {
     Array: () => `(${value.map(prn).join(" ")})`,
+    Boolean: () => String(value),
+    Function: () => value.source ?? String(value),
     Number: () => String(value),
     Null: () => "null",
     Object: () => Object.values(value).join(" "),
@@ -115,7 +116,35 @@ const prn = (value) => {
   return dispatch[type(value)]()
 }
 
+const tableOperators = (operators) =>
+  Object.values(
+    Object.groupBy(
+      Object.entries(operators),
+      ([, { precedence }]) => precedence
+    )
+  )
+    .sort((a, b) => -a[0][1].precedence + b[0][1].precedence)
+    .map((group) => ({
+      operators: group.map(([name]) => name).join(" "),
+      precedence: group[0][1].precedence,
+    }))
+
 const tokenize = (s) => {
+  const skipComment = (xs) => {
+    if (xs[0] === ";;") {
+      xs.shift()
+      while (xs.length && xs[0] !== ";;") {
+        xs.shift()
+      }
+
+      if (xs[0] !== ";;") {
+        throw new Error(`Expected closing ;; but found ${tokens[0]}`)
+      }
+
+      xs.shift()
+    }
+  }
+
   const _ = (xs) => {
     const x = xs.shift()
 
@@ -123,32 +152,44 @@ const tokenize = (s) => {
       return Number(x)
     }
 
+    if (x === "true") {
+      return true
+    }
+
+    if (x === "false") {
+      return false
+    }
+
     return x
   }
 
   const xs = s
-    .replace(/([()]|[a-zA-Z0-9]+)/g, " $1 ")
+    .replace(/([()]|[a-zA-Z_0-9]+)/g, " $1 ")
     .trim()
     .split(/\s+/)
   const tokens = []
+  skipComment(xs)
   while (xs.length) {
     tokens.push(_(xs))
+    skipComment(xs)
   }
 
   return tokens
 }
 
+const type = (x) => x?.constructor?.name ?? "Null"
+
 const operators = {
   "∈": {
     arity: 2,
     infix: true,
-    precedence: 400,
+    precedence: 20,
   },
 
   ".": {
     arity: 2,
     infix: true,
-    precedence: 400,
+    precedence: 20,
     primitive: (rators, env) => {
       const obj = interpret(rators[0], env)
       const key = rators[1]
@@ -165,7 +206,7 @@ const operators = {
     dispatch: {
       Number: (a) => Math.sqrt(a),
     },
-    precedence: 300,
+    precedence: 18,
   },
 
   "×": {
@@ -174,15 +215,8 @@ const operators = {
       Number: (a, b) => a * b,
     },
     infix: true,
-    precedence: 200,
+    precedence: 16,
   },
-
-  // "·": {
-  //   arity: 2,
-  //   dispatch: {},
-  //   infix: true,
-  //   precedence: 200,
-  // },
 
   "/": {
     arity: 2,
@@ -190,7 +224,7 @@ const operators = {
       Number: (a, b) => a / b,
     },
     infix: true,
-    precedence: 200,
+    precedence: 16,
   },
 
   "+": {
@@ -199,7 +233,7 @@ const operators = {
       Number: (a, b) => a + b,
     },
     infix: true,
-    precedence: 100,
+    precedence: 14,
   },
 
   "-": {
@@ -208,7 +242,27 @@ const operators = {
       Number: (a, b) => a - b,
     },
     infix: true,
-    precedence: 100,
+    precedence: 14,
+  },
+
+  ">": {
+    arity: 2,
+    dispatch: {
+      Number: (a, b) => a > b,
+    },
+    infix: true,
+    precedence: 12,
+  },
+
+  otherwise: {
+    arity: 1,
+    precedence: 10,
+  },
+
+  if: {
+    arity: 2,
+    infix: true,
+    precedence: 6,
   },
 
   ",": {
@@ -217,7 +271,61 @@ const operators = {
       _: (car, cdr) => new Cons(car, cdr),
     },
     infix: true,
-    precedence: 75,
+    precedence: 4,
+  },
+
+  "{": {
+    arity: 2,
+    precedence: 2,
+    primitive: (rators, env) => {
+      if (
+        !(
+          rators[1] === "}" ||
+          (rators[1]?.[0] === "otherwise" && rators[1][1] === "}")
+        )
+      ) {
+        throw new Error(`Expected closing } but found ${rators[1]}`)
+      }
+
+      for (const clause of decomma(rators[0])) {
+        if (clause?.[0] === "if") {
+          const [, cons, pred] = clause
+          if (interpret(pred, env)) {
+            return interpret(cons, env)
+          }
+        } else {
+          return interpret(clause, env)
+        }
+      }
+    },
+  },
+
+  "}": {
+    arity: 0,
+    precedence: 2,
+  },
+
+  "∀": {
+    arity: 2,
+    precedence: 1,
+    primitive: (rators, env) => {
+      const [name, body] = rators
+      const fn = (xs) => {
+        const out = []
+        for (const x of xs) {
+          const r = interpret(body, { ...env, [name]: x })
+          if (r?.type === ">>") {
+            out.push(r.val)
+          }
+        }
+
+        return out
+      }
+
+      fn.source = prn(body)
+
+      return fn
+    },
   },
 
   "∃": {
@@ -225,13 +333,8 @@ const operators = {
     precedence: 0,
     primitive: (rators, env) => {
       const name = rators[1]
-      let struct = rators[2]
-      const params = []
-      while (struct?.[0] === ",") {
-        params.unshift(struct[2])
-        struct = struct[1]
-      }
-      params.push(struct)
+      const params = decomma(rators[2])
+
       if (rators[0] === "type") {
         env[name] = {
           arity: params.length,
@@ -241,19 +344,14 @@ const operators = {
               ...Object.fromEntries(params.map((param, i) => [param, args[i]])),
             }),
           },
-          precedence: 50,
+          precedence: 10,
         }
       } else {
         env[name] = {
-          arity: params.find((param) => typeof param === "number"),
+          arity: params[0],
           dispatch: {},
           infix: params.includes("infix"),
-          precedence:
-            env[
-              params.find(
-                (param) => typeof param !== "number" && param !== "infix"
-              )
-            ].precedence,
+          precedence: params[params.length - 1],
         }
       }
     },
@@ -266,6 +364,10 @@ const operators = {
     primitive: (rators, env) => {
       const [lhs, rhs] = rators
       const [op, ...params] = lhs
+      if (params[0][0] !== "∈") {
+        throw new Error(`Expected ∈ for dispatch`)
+      }
+
       env[op].dispatch[params[0][2]] = (...args) => {
         const newEnv = { ...env }
         for (let p = 0; p < params.length; p++) {
@@ -289,8 +391,13 @@ const env = { ...operators }
 let result = null
 while (tokens.length) {
   const exp = parse(tokens, env)
-  console.log("exp:", prn(exp))
+  // console.log("exp:", prn(exp))
   result = interpret(exp, env)
 }
 
+console.table(tableOperators(env))
+
 console.log("result:", prn(result))
+if (type(result) === "Function") {
+  console.log("called: ", result([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+}

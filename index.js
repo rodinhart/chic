@@ -11,7 +11,7 @@ const thread = (x, ...fns) => fns.reduce((r, fn) => fn(r), x)
 
 const S = 100
 
-const source = await fetch("./main.ch").then((r) => r.text())
+const source = await fetch("./main.chic").then((r) => r.text())
 
 const tokens = tokenize(source)
 // console.log("tokens:", tokens)
@@ -86,7 +86,7 @@ if (true) {
     const points = thread(
       cube.vertices,
       env.render.dispatch["Vec|Vec|Number"](
-        Vec(0, 0, frame / 60),
+        Vec(frame / 150, frame / 100, frame / 50),
         Vec(0, 10, 0),
         H
       )

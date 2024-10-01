@@ -306,6 +306,15 @@ export const operators = {
     precedence: 6,
   },
 
+  "→": {
+    arity: 2,
+    dispatch: {
+      _: (f, g) => (input) => g(f(input)),
+    },
+    infix: true,
+    precedence: 6,
+  },
+
   ":": {
     arity: 2,
     infix: true,

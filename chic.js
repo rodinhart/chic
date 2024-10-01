@@ -25,6 +25,10 @@ export const interpret = (exp, env) =>
         .map((arg) => (type(arg) === "Object" ? arg.type : type(arg)))
         .join("|")
 
+      if (!op.dispatch) {
+        throw new Error(`No dispatch for ${rand}`)
+      }
+
       if (!(t in op.dispatch)) {
         if ("_" in op.dispatch) {
           return op.dispatch["_"](...args)
@@ -206,6 +210,15 @@ export const operators = {
     },
   },
 
+  "£": {
+    arity: 2,
+    dispatch: {
+      _: (arr, i) => arr[i],
+    },
+    infix: true,
+    precedence: 19.5,
+  },
+
   "√": {
     arity: 1,
     dispatch: {
@@ -318,7 +331,16 @@ export const operators = {
   ":": {
     arity: 2,
     infix: true,
-    precedence: 6,
+    precedence: 4.5,
+  },
+
+  "⇒": {
+    arity: 2,
+    dispatch: {
+      _: (x, f) => f(x),
+    },
+    infix: true,
+    precedence: 5,
   },
 
   ",": {
@@ -390,7 +412,7 @@ export const operators = {
     dispatch: {
       _: (val) => ({ type: ">>", val }),
     },
-    precedence: 1,
+    precedence: 3.5,
     right: true,
   },
 

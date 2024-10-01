@@ -33,55 +33,29 @@ M ∈ Matrix × V ∈ Vec ≡ Vec
   M.d × V.x + M.e × V.y + M.f × V.z
   M.g × V.x + M.h × V.y + M.i × V.z
 
-;; Recursion test ;;
-∃ op sum 2, 10
-
-sum n ∈ Number a ∈ Number ≡
-  { sum n - 1 a + n  if n > 0,
-    a                otherwise }
-
-
-;; Complex numbers ;;
-∃ type Complex re, im
-∃ op mag 1, 10
-
-A ∈ Complex + B ∈ Complex ≡ Complex
-  A.re + B.re
-  A.im + B.im
-
-A ∈ Complex × B ∈ Complex ≡ Complex
-  A.re × B.re - A.im × B.im
-  A.re × B.im + A.im × B.re
-
-mag A ∈ Complex ≡ √(A.re × A.re + A.im × A.im)
-
 
 ;; Point ;;
 ∃ type Point x, y
 
+s ∈ Number × P ∈ Point ≡ Point s × P.x s × P.y
 
-;; Pixel ;;
-∃ type Pixel x, y, col
+P ∈ Point - Q ∈ Point ≡ Point P.x - Q.x P.y - Q.y
+
+P ∈ Point × Q ∈ Point ≡ P.x × Q.y - P.y × Q.x
 
 
-;; Mandelbrot ;;
-∃ op mandel_f 3, 10
-mandel_f C ∈ Complex Z ∈ Complex n ∈ Number ≡
-  { mandel_f C Z × Z + C n - 1  if n > 0 ∧ (mag Z) < 2,
-    n                           otherwise }
+;; Surface  ;;
+∃ type Surface a, b, c, col
 
-∃ op mandel 4, 10
-mandel x ∈ Number y ∈ Number s ∈ Number S ∈ Number ≡
-  let q : s / S,
-      O : Complex 0 0 in
-  ∀ P let C : Complex x + q × P.x y + q × P.y in
-      >> Pixel P.x P.y mandel_f C O 256
+
+;; Triangle  ;;
+∃ type Triangle a, b, c, col
 
 
 ;; 3d ;;
 ∃ op project 1, 10
 project scale ∈ Number ≡
-  ∀ V >> Point scale × V.x / V.y scale × V.z / V.y
+  ∀ V >> scale × (Point V.x / V.y  V.z / V.y)
 
 ∃ op rotate 1, 10
 rotate R ∈ Vec ≡ 
@@ -103,10 +77,51 @@ rotate R ∈ Vec ≡
 translate T ∈ Vec ≡
   ∀ V >> Vec V.x + T.x V.y + T.y V.z + T.z
 
-∃ op render 3, 10
-;; render R ∈ Vec T ∈ Vec scale ∈ Number ≡
-  ∀ V let W : rotate R V,
-          X : Vec W.x + T.x W.y + T.y W.z + T.z in
-      >> Point scale × X.x / X.y scale × X.z / X.y ;;
+∃ op getPoints 3, 10
+getPoints R ∈ Vec T ∈ Vec scale ∈ Number ≡ rotate R → translate T → project scale
 
-render R ∈ Vec T ∈ Vec scale ∈ Number ≡ rotate R → translate T → project scale
+∃ op getTriangles 4, 10
+getTriangles vertices ∈ Array R ∈ Vec T ∈ Vec scale ∈ Number ≡
+  let points : vertices ⇒ getPoints R T scale in
+  ∀ S let a : points£S.a,
+          b : points£S.b,
+          c : points£S.c,
+          d : b - a,
+          e : c - a in
+      { (>> Triangle a b c S.col) if d × e > 0 }
+
+
+
+
+
+;; Complex numbers ;;
+∃ type Complex re, im
+∃ op mag 1, 10
+
+A ∈ Complex + B ∈ Complex ≡ Complex
+  A.re + B.re
+  A.im + B.im
+
+A ∈ Complex × B ∈ Complex ≡ Complex
+  A.re × B.re - A.im × B.im
+  A.re × B.im + A.im × B.re
+
+mag A ∈ Complex ≡ √(A.re × A.re + A.im × A.im)
+
+
+;; Pixel ;;
+∃ type Pixel x, y, col
+
+
+;; Mandelbrot ;;
+∃ op mandel_f 3, 10
+mandel_f C ∈ Complex Z ∈ Complex n ∈ Number ≡
+  { mandel_f C Z × Z + C n - 1  if n > 0 ∧ (mag Z) < 2,
+    n                           otherwise }
+
+∃ op mandel 4, 10
+mandel x ∈ Number y ∈ Number s ∈ Number S ∈ Number ≡
+  let q : s / S,
+      O : Complex 0 0 in
+  ∀ P let C : Complex x + q × P.x y + q × P.y in
+      >> Pixel P.x P.y mandel_f C O 256

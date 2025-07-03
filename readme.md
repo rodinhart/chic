@@ -24,6 +24,8 @@ Chic uses a lot of mathematical symbols instead of keywords. This makes the code
 
 **`getPoints R ∈ Vec T ∈ Vec scale ∈ Number ≡ rotate R → translate T → project scale`** Implements getPoints which takes rotation, translation and scaling arguments and returns a pipe. Read right hand side as "compose the rotation pipe with the translation pipe, then compose with the project pipe".
 
+**`vertices ⇒ getPoints R T scale`** Apply a value to a pipe.
+
 **`let x : 10 in <expr>`** Binds the result of an expression (10 in this example) to a symbol (x) which is then available in the expression <expr>.
 
 **`{ -x if x < 0, x otherwise }`** Conditional expression. Read exactly as stated: "-x if x less than 0, x otherwise".

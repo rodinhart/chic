@@ -28,6 +28,7 @@ console.table(tableOperators(env))
 
 console.log("result:", prn(result))
 
+// mandelbrot
 if (false) {
   const canvas = document.createElement("canvas")
   canvas.width = S
@@ -59,6 +60,7 @@ if (false) {
   console.timeEnd("plot")
 }
 
+// spinning cube
 if (true) {
   const H = 400
   const canvas = document.createElement("canvas")

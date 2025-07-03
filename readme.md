@@ -16,7 +16,7 @@ Chic uses a lot of mathematical symbols instead of keywords. This makes the code
 
 **`∃ type Vec x, y, z`** Defines a new type Vec with fields x, y and z. Read as "There exists a type Vec of x, y and z".
 
-**`A ∈ Vec + B ∈ Vec ≡ Vec A.x + B.x A.y + B.y  A.z + B.z`** Implements addition for vectors. Read as "A which is an element of Vec, plus B element of Vec is defined as a vector of element by element addition".
+**`A ∈ Vec + B ∈ Vec ≡ Vec A.x + B.x  A.y + B.y  A.z + B.z`** Implements addition for vectors. Read as "A which is an element of Vec, plus B element of Vec is defined as a vector of element by element addition".
 
 **`∃ op · 3, infix, 16`** Define a new operator dot of arity 3, is infix with precedence level 16. Read as "The exists an operator · " etc.
 
@@ -29,6 +29,10 @@ Chic uses a lot of mathematical symbols instead of keywords. This makes the code
 **`{ -x if x < 0, x otherwise }`** Conditional expression. Read exactly as stated: "-x if x less than 0, x otherwise".
 
 **`;; comment ::`** Comments start and end with ;;.
+
+## Why Chic
+
+Nile Rodgers is a member of Chic.
 
 ## todo
 
